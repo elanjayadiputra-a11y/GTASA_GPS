@@ -11,14 +11,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # === Checkout repo kamu ===
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: recursive
 
-    # === Download template AML ===
-    - name: Download AndroidModLoader template
+    - name: Download AML template
       uses: wei/wget@v1
       with:
         args: -O ./AML_src.zip https://github.com/RusJJ/AndroidModLoader/archive/refs/heads/main.zip
@@ -28,38 +26,33 @@ jobs:
         unzip ./AML_src.zip
         mv ./AndroidModLoader-main/mod ./mod
 
-    # === Ambil file structs dari repo publik (bukan privat) ===
-    - name: Download GTASA structs & helpers (public)
+    - name: Download public structs
       uses: actions/checkout@v4
       with:
         repository: AndroidModLoader/GTASA_GPS
         path: public_structs
 
-    # === Overwrite otomatis tanpa error ===
-    - name: Move structs to project (overwrite)
+    - name: Move required struct files
       run: |
-        rsync -av public_structs/ ./
+        cp public_structs/GTASA_STRUCTS* ./
+        cp -r public_structs/AArch64_ModHelper ./
 
-    # === Install NDK ===
     - name: Install Android NDK (r25c)
       uses: nttld/setup-ndk@v1
       with:
         ndk-version: r25c
-        local-cache: true
 
-    # === Build dengan ndk-build ===
-    - name: Build the code
+    - name: Build
       run: |
         ndk-build \
+        APP_PLATFORM=android-21 \
         NDK_PROJECT_PATH=. \
         APP_BUILD_SCRIPT=./Android.mk \
         APP_APPLICATION_MK=./Application.mk \
-        NDK_DEBUG=0 \
         -j12
 
-    # === Upload hasil build (.so) ===
-    - name: Upload compiled mod
+    - name: Upload compiled output
       uses: actions/upload-artifact@v4
       with:
         name: GTASA_GPS_Build
-        path: ./libs
+        path: libs/
